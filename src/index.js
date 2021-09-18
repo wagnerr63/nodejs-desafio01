@@ -26,6 +26,10 @@ function getTodoByID(todos, id) {
   return todos.find(todo => todo.id === id);
 }
 
+function checksExistUsername(username) {
+  return users.find(user => user.username===username);
+}
+
 app.post('/users', (request, response) => {
   const { name, username } = request.body;
   if (!name || name==='') {
@@ -34,6 +38,10 @@ app.post('/users', (request, response) => {
 
   if (!username || username==='') {
     return response.status(400).json({error: 'Username is required'});
+  }
+
+  if (checksExistUsername(username)) {
+    return response.status(400).json({error: 'Username is already in use.'});
   }
 
   const newUser = {
@@ -69,7 +77,7 @@ app.post('/todos', checksExistsUserAccount, (request, response) => {
     title,
     done: false,
     deadline: new Date(deadline),
-    createdAt: new Date()
+    created_at: new Date()
   }
 
   user.todos.push(newTodo);
@@ -84,13 +92,13 @@ app.put('/todos/:id', checksExistsUserAccount, (request, response) => {
 
   const todo = getTodoByID(user.todos, id);
   if (!todo) {
-    return response.status(400).json({ error: 'Todo not found.' });
+    return response.status(404).json({ error: 'Todo not found.' });
   }
 
   todo.title = title;
   todo.deadline = new Date(deadline);
 
-  return response.status(201).send();
+  return response.status(201).json(todo);
 });
 
 app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
@@ -99,7 +107,7 @@ app.patch('/todos/:id/done', checksExistsUserAccount, (request, response) => {
 
   const todo = getTodoByID(user.todos, id);
   if (!todo) {
-    return response.status(400).json({ error: 'Todo not found.' });
+    return response.status(404).json({ error: 'Todo not found.' });
   }
 
   todo.done = true;
@@ -112,10 +120,13 @@ app.delete('/todos/:id', checksExistsUserAccount, (request, response) => {
   const { id } = request.params;
 
   const todo = getTodoByID(user.todos, id);
+  if (!todo) {
+    return response.status(404).json({ error: 'Todo not found.' });
+  }
 
   user.todos.splice(todo, 1);
 
-  return response.status(200).json(user.todos);
+  return response.status(204).json(user.todos);
 });
 
 module.exports = app;
